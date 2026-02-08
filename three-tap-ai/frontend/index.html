@@ -204,7 +204,8 @@ async function sendMessage() {
         botMsg.innerText = data.answer;
 
     } catch {
-        botMsg.innerText = "Server not responding.";
+        botMessage.textContent = data.answer || "No answer found.";
+
     }
 
     chatBox.scrollTop = chatBox.scrollHeight;
