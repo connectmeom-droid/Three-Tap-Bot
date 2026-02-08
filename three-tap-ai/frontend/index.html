@@ -186,7 +186,8 @@ async function sendMessage() {
     // Bot message
     const botMsg = document.createElement("div");
     botMsg.className = "message bot";
-    botMsg.innerText = "Thinking...";
+    botMessage.textContent = "Waking server… please wait";
+
     chatBox.appendChild(botMsg);
 
     chatBox.scrollTop = chatBox.scrollHeight;
