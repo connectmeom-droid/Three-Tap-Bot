@@ -1,6 +1,11 @@
-from intent_engine import detect_intent
-from csv_engine import search_cutoff
-from counselling_engine import rank_counselling, extract_percentile, percentile_to_rank
+from backend.intent_engine import detect_intent
+from backend.csv_engine import search_cutoff
+from backend.counselling_engine import (
+    rank_counselling,
+    extract_percentile,
+    percentile_to_rank,
+)
+
 
 
 def hybrid_answer(question):

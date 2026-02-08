@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from hybrid_engine import hybrid_answer
+from backend.hybrid_engine import hybrid_answer
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
