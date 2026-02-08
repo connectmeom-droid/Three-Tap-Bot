@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pandas
+python-dotenv
+beautifulsoup4
+langchain
+langchain-groq
+faiss-cpu
+sentence-transformers
+python-multipart
