@@ -1,5 +1,5 @@
 import re
-from counselling_engine import rank_counselling
+from backend.counselling_engine import rank_counselling
 
 TOTAL_CANDIDATES = 1100000
 
