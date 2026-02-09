@@ -33,39 +33,45 @@ def hybrid_answer(question):
 
         # ---------------- RANK / PERCENTILE ----------------
         if intent == "rank":
-            # check percentile
-            percentile = extract_percentile(question)
-            rank_override = None
+    # detect percentile
+            import re
+            p_match = re.search(r"(\d{2,3})\s*percentile", question.lower())
 
-            if percentile:
-                rank_override = percentile_to_rank(percentile)
+            if p_match:
+                percentile = int(p_match.group(1))
 
-            result = rank_counselling(question, rank_override)
+        # rough percentile → rank mapping
+                if percentile >= 99:
+                    rank = 1000
+                elif percentile >= 97:
+                    rank = 5000
+                elif percentile >= 95:
+                    rank = 10000
+                elif percentile >= 90:
+                    rank = 30000
+                elif percentile >= 80:
+                    rank = 80000
+                else:
+                    rank = 150000
 
-            if result is None:
-                return "Please provide a valid rank or percentile."
-
-            df, msg = result
+                df, msg = rank_counselling(question, rank_override=rank)
+            else:
+                df, msg = rank_counselling(question)
 
             if msg:
                 return msg
 
-            reply = ""
-
-            if percentile:
-                reply += f"📊 Estimated Rank for {percentile}%ile: ~{rank_override}\n\n"
-
-            reply += "🎯 Best colleges for your profile:\n\n"
-
+            reply = "🎯 Best colleges for your profile:\n\n"
             for _, row in df.iterrows():
                 reply += (
                     f"{row['Institute']}\n"
                     f"Branch: {row['Branch']}\n"
                     f"Category: {row['Category']} | {row['Gender']}\n"
                     f"Closing Rank: {row['CloseRank']}\n\n"
-                )
+              )
 
             return reply.strip()
+
 
         return "Ask about ranks, percentiles, cutoffs, or colleges."
 

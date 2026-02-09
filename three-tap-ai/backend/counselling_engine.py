@@ -1,5 +1,6 @@
 import re
-from backend.csv_engine import cutoff_df
+from csv_engine import cutoff_df
+
 
 
 
@@ -94,15 +95,11 @@ def institute_priority(name):
     return 4
 
 
-def rank_counselling(query):
-    rank = extract_rank(query)
+def rank_counselling(query, rank_override=None):
+    rank = rank_override if rank_override else extract_rank(query)
 
     if not rank:
-        percentile = extract_percentile(query)
-        if percentile:
-            rank = percentile_to_rank(percentile)
-        else:
-            return None, "Please tell me your rank or percentile."
+        return None, "Please tell me your rank."
 
     branch = extract_branch(query)
     category = extract_category(query)
@@ -111,10 +108,17 @@ def rank_counselling(query):
 
     df = cutoff_df.copy()
 
-    # clean closing rank
+    # clean rank column
+    # clean rank column safely
     df["CloseRank"] = df["CloseRank"].astype(str)
+
+# remove non-numeric characters
     df["CloseRank"] = df["CloseRank"].str.replace(r"\D", "", regex=True)
-    df = df[df["CloseRank"] != ""]
+
+# remove empty or invalid rows
+    df = df[df["CloseRank"].str.isnumeric()]
+
+# convert to integer
     df["CloseRank"] = df["CloseRank"].astype(int)
 
     # branch filter
@@ -122,7 +126,8 @@ def rank_counselling(query):
         df = df[df["Branch"].str.lower().str.contains(branch, na=False)]
 
     # category filter
-    df = df[df["Category"].str.contains(category, na=False)]
+    if category:
+        df = df[df["Category"].str.contains(category, na=False)]
 
     # gender filter
     if gender == "Female":
@@ -130,7 +135,7 @@ def rank_counselling(query):
     else:
         df = df[df["Gender"].str.contains("Gender-Neutral", na=False)]
 
-    # institute filter
+    # institute type filter
     if inst_type == "iit":
         df = df[df["Institute"].str.contains("Indian Institute of Technology", na=False)]
     elif inst_type == "nit":
@@ -138,19 +143,15 @@ def rank_counselling(query):
     elif inst_type == "iiit":
         df = df[df["Institute"].str.contains("Information Technology", na=False)]
 
-    # only colleges possible at that rank
+    # rank filter
     df = df[df["CloseRank"] >= rank]
 
     if df.empty:
+        if inst_type:
+            return None, f"No {inst_type.upper()} available for this rank."
         return None, "No colleges found for your rank."
 
-    # add priority
-    df["Priority"] = df["Institute"].apply(institute_priority)
-
-    # sort by best institute first, then by closest rank
-    df = df.sort_values(["Priority", "CloseRank"])
-
-    # remove duplicates
     df = df.drop_duplicates(subset=["Institute", "Branch", "Category", "Gender"])
+    df = df.sort_values("CloseRank")
 
     return df.head(10), None
