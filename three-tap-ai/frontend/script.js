@@ -27,10 +27,11 @@ async function sendMessage() {
     }
 }
 
-sendBtn.onclick = sendMessage;
+// Click send
+sendBtn.addEventListener("click", sendMessage);
 
-// ENTER key support
-input.addEventListener("keydown", function (e) {
+// Press Enter
+input.addEventListener("keypress", function (e) {
     if (e.key === "Enter") {
         sendMessage();
     }
