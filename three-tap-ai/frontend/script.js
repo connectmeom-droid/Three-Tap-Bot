@@ -1,8 +1,8 @@
-const input = document.getElementById("input");
-const sendBtn = document.getElementById("send");
+const input = document.getElementById("user-input");
+const sendBtn = document.getElementById("send-btn");
 const chatBox = document.getElementById("chat-box");
 
-sendBtn.onclick = async () => {
+async function sendMessage() {
     const text = input.value.trim();
     if (!text) return;
 
@@ -25,7 +25,16 @@ sendBtn.onclick = async () => {
     } catch (err) {
         botMsg.textContent = "Server not responding.";
     }
-};
+}
+
+sendBtn.onclick = sendMessage;
+
+// ENTER key support
+input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+        sendMessage();
+    }
+});
 
 function addMessage(text, type) {
     const msg = document.createElement("div");
