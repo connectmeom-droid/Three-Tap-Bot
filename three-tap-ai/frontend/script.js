@@ -9,7 +9,7 @@ sendBtn.onclick = async () => {
     addMessage(text, "user");
     input.value = "";
 
-    const botMsg = addMessage("Thinking...", "bot");
+    const botMsg = addMessage("Waking up server…", "bot");
 
     try {
         const res = await fetch("https://three-tap-backend.onrender.com/chat", {
