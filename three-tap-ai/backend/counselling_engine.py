@@ -2,9 +2,6 @@ import re
 from csv_engine import cutoff_df
 
 
-
-    
-   
 def extract_rank(q):
     q = q.lower()
 
@@ -28,14 +25,13 @@ def extract_rank(q):
 
 
 def extract_percentile(q):
-    match = re.search(r"(\d{1,2}(\.\d+)?)\s*%|percentile", q)
+    match = re.search(r"(\d{1,2}(\.\d+)?)\s*(%|percentile)", q.lower())
     if match:
         return float(match.group(1))
     return None
 
 
 def percentile_to_rank(percentile):
-    # rough JEE approximation
     return int((100 - percentile) * 10000)
 
 
@@ -109,18 +105,17 @@ def rank_counselling(query, rank_override=None):
 
     df = cutoff_df.copy()
 
-    # clean rank column
-    # clean rank column safely
+    # Clean CloseRank
     df["CloseRank"] = df["CloseRank"].astype(str)
-
-# remove non-numeric characters
     df["CloseRank"] = df["CloseRank"].str.replace(r"\D", "", regex=True)
-
-# remove empty or invalid rows
     df = df[df["CloseRank"].str.isnumeric()]
-
-# convert to integer
     df["CloseRank"] = df["CloseRank"].astype(int)
+
+    # Clean OpenRank
+    df["OpenRank"] = df["OpenRank"].astype(str)
+    df["OpenRank"] = df["OpenRank"].str.replace(r"\D", "", regex=True)
+    df = df[df["OpenRank"].str.isnumeric()]
+    df["OpenRank"] = df["OpenRank"].astype(int)
 
     # branch filter
     if branch:
@@ -130,7 +125,7 @@ def rank_counselling(query, rank_override=None):
     if category:
         df = df[df["Category"].str.contains(category, na=False)]
 
-    # remove PwD unless user asks for it
+    # remove PwD unless asked
     if "pwd" not in query.lower():
         df = df[~df["Category"].str.contains("PwD", na=False)]
 
@@ -148,17 +143,21 @@ def rank_counselling(query, rank_override=None):
     elif inst_type == "iiit":
         df = df[df["Institute"].str.contains("Information Technology", na=False)]
 
-    # rank filter
-    df = df[df["CloseRank"] >= rank]
+    # FINAL counselling logic
+    df = df[(df["OpenRank"] <= rank) & (df["CloseRank"] >= rank)]
 
     if df.empty:
         if inst_type:
             return None, f"No {inst_type.upper()} available for this rank."
         return None, "No colleges found for your rank."
 
+    # remove duplicates
     df = df.drop_duplicates(subset=["Institute", "Branch", "Category", "Gender"])
-    # sort best colleges first
-    df = df.sort_values("CloseRank", ascending=False)
 
+    # apply institute priority
+    df["priority"] = df["Institute"].apply(institute_priority)
+
+    # sort: best institute first, then best branch
+    df = df.sort_values(["priority", "CloseRank"])
 
     return df.head(10), None
