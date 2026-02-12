@@ -6,6 +6,41 @@ from counselling_engine import (
     percentile_to_rank
 )
 
+def format_rank_response(df, rank):
+    if df is None or df.empty:
+        return "No colleges found for this rank."
+
+    safe = []
+    moderate = []
+    dream = []
+
+    for _, row in df.iterrows():
+        closing = int(row["CloseRank"])
+
+        if closing >= rank * 1.5:
+            safe.append(row)
+        elif closing >= rank:
+            moderate.append(row)
+        else:
+            dream.append(row)
+
+    def build_section(title, data):
+        text = f"{title}:\n"
+        for r in data[:3]:
+            text += f"- {r['Institute']} {r['Branch']}\n"
+        return text
+
+    reply = f"Based on your rank ({rank}):\n\n"
+
+    if safe:
+        reply += build_section("Safe options", safe)
+    if moderate:
+        reply += build_section("Moderate options", moderate)
+    if dream:
+        reply += build_section("Dream options", dream)
+
+    return reply.strip()
+
 
 def hybrid_answer(question):
     try:
@@ -33,8 +68,9 @@ def hybrid_answer(question):
 
         # ---------------- RANK / PERCENTILE ----------------
         if intent == "rank":
-    # detect percentile
             import re
+
+    # check for percentile
             p_match = re.search(r"(\d{2,3})\s*percentile", question.lower())
 
             if p_match:
@@ -55,22 +91,18 @@ def hybrid_answer(question):
                     rank = 150000
 
                 df, msg = rank_counselling(question, rank_override=rank)
+
             else:
                 df, msg = rank_counselling(question)
 
+        # extract rank for formatting
+                nums = re.findall(r"\d{1,7}", question)
+                rank = int(nums[0]) if nums else 0
+
             if msg:
-                return msg
+               return msg
 
-            reply = "🎯 Best colleges for your profile:\n\n"
-            for _, row in df.iterrows():
-                reply += (
-                    f"{row['Institute']}\n"
-                    f"Branch: {row['Branch']}\n"
-                    f"Category: {row['Category']} | {row['Gender']}\n"
-                    f"Closing Rank: {row['CloseRank']}\n\n"
-              )
-
-            return reply.strip()
+            return format_rank_response(df, rank)
 
 
         return "Ask about ranks, percentiles, cutoffs, or colleges."

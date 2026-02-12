@@ -3,8 +3,8 @@ from csv_engine import cutoff_df
 
 
 
-
-
+    
+   
 def extract_rank(q):
     q = q.lower()
 
