@@ -130,6 +130,10 @@ def rank_counselling(query, rank_override=None):
     if category:
         df = df[df["Category"].str.contains(category, na=False)]
 
+    # remove PwD unless user asks for it
+    if "pwd" not in query.lower():
+        df = df[~df["Category"].str.contains("PwD", na=False)]
+
     # gender filter
     if gender == "Female":
         df = df[df["Gender"].str.contains("Female", na=False)]
@@ -153,6 +157,8 @@ def rank_counselling(query, rank_override=None):
         return None, "No colleges found for your rank."
 
     df = df.drop_duplicates(subset=["Institute", "Branch", "Category", "Gender"])
-    df = df.sort_values("CloseRank")
+    # sort best colleges first
+    df = df.sort_values("CloseRank", ascending=False)
+
 
     return df.head(10), None

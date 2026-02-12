@@ -21,7 +21,8 @@ async function sendMessage() {
         });
 
         const data = await res.json();
-        botMsg.textContent = data.answer || "No response.";
+        botMsg.innerText = data.answer || "No response.";
+
     } catch (err) {
         botMsg.textContent = "Server not responding.";
     }
