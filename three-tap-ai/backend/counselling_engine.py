@@ -152,13 +152,19 @@ def rank_counselling(query, rank_override=None):
     # 1. detect marks
     marks = extract_marks(query)
     percentile = extract_percentile(query)
+    exam = extract_exam_type(query)
 
     if marks:
         rank = mains_marks_to_rank(marks)
+        exam = "mains"   # force mains when marks are given
+
     elif percentile:
         rank = percentile_to_rank(percentile)
+        exam = "mains"   # percentile always from mains
+
     else:
         rank = rank_override if rank_override else extract_rank(query)
+
 
     if not rank:
         return None, "Please tell me your rank or marks."
@@ -167,7 +173,7 @@ def rank_counselling(query, rank_override=None):
     category = extract_category(query)
     gender = extract_gender(query)
     inst_type = extract_institute_type(query)
-    exam = extract_exam_type(query)
+    
 
     df = cutoff_df.copy()
 
