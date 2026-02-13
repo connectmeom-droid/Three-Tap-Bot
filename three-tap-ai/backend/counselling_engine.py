@@ -193,7 +193,8 @@ def rank_counselling(query, rank_override=None):
 
     # remove PwD unless asked
     if "pwd" not in query.lower():
-        df = df[~df["Category"].str.contains("PwD", na=False)]
+        df = df[~df["Category"].str.lower().str.contains("pwd", na=False)]
+
 
     if gender == "Female":
         df = df[df["Gender"].str.contains("Female", na=False)]
@@ -202,11 +203,25 @@ def rank_counselling(query, rank_override=None):
 
     # ---------------- EXAM BASED FILTER ----------------
 
+    # STRICT exam filtering
     if exam == "mains":
-        df = df[~df["Institute"].str.contains("Indian Institute of Technology", na=False)]
+        df = df[
+        df["Institute"].str.contains(
+            "National Institute of Technology|Information Technology|GFTI|School of Planning",
+            case=False,
+            na=False
+        )
+    ]
 
     elif exam == "advanced":
-        df = df[df["Institute"].str.contains("Indian Institute of Technology", na=False)]
+        df = df[
+        df["Institute"].str.contains(
+            "Indian Institute of Technology",
+            case=False,
+            na=False
+        )
+    ]
+
 
     # ---------------- INSTITUTE TYPE FILTER ----------------
 
@@ -233,6 +248,7 @@ def rank_counselling(query, rank_override=None):
     df["priority"] = df["Institute"].apply(institute_priority)
 
     # sort: best institute first
-    df = df.sort_values(["priority", "CloseRank"])
+    df = df.sort_values(["priority", "CloseRank"], ascending=[True, True])
+
 
     return df.head(10), None
