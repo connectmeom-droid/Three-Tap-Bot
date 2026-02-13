@@ -136,13 +136,29 @@ def extract_institute_type(q):
 
 def institute_priority(name):
     name = name.lower()
-    if "indian institute of technology" in name:
+
+    # Top IITs
+    if "bombay" in name or "delhi" in name or "madras" in name or "kanpur" in name or "kharagpur" in name:
         return 1
-    if "national institute of technology" in name:
+
+    # Other IITs
+    if "indian institute of technology" in name:
         return 2
-    if "information technology" in name:
+
+    # Top NITs
+    if "trichy" in name or "warangal" in name or "surathkal" in name:
         return 3
-    return 4
+
+    # Other NITs
+    if "national institute of technology" in name:
+        return 4
+
+    # IIITs
+    if "information technology" in name:
+        return 5
+
+    return 6
+
 
 
 # -------------------- MAIN COUNSELLING FUNCTION --------------------
@@ -210,23 +226,24 @@ def rank_counselling(query, rank_override=None):
     # ---------------- EXAM BASED FILTER ----------------
 
     # STRICT exam filtering
+    # ---------------- EXAM BASED FILTER ----------------
+
     if exam == "mains":
-        df = df[
-        df["Institute"].str.contains(
-            "National Institute of Technology|Information Technology|GFTI|School of Planning",
-            case=False,
-            na=False
-        )
-    ]
+    # Remove all IITs completely
+       df = df[~df["Institute"].str.contains(
+        "Indian Institute of Technology",
+        case=False,
+        na=False
+    )]
 
     elif exam == "advanced":
-        df = df[
-        df["Institute"].str.contains(
-            "Indian Institute of Technology",
-            case=False,
-            na=False
-        )
-    ]
+    # Keep only IITs
+       df = df[df["Institute"].str.contains(
+        "Indian Institute of Technology",
+        case=False,
+        na=False
+    )]
+
 
 
     # ---------------- INSTITUTE TYPE FILTER ----------------
@@ -254,7 +271,11 @@ def rank_counselling(query, rank_override=None):
     df["priority"] = df["Institute"].apply(institute_priority)
 
     # sort: best institute first
-    df = df.sort_values(["priority", "CloseRank"], ascending=[True, True])
+    df = df.sort_values(
+    by=["priority", "CloseRank"],
+    ascending=[True, True]
+)
+
 
 
     return df.head(10), None
