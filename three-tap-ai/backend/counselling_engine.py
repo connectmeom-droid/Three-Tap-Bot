@@ -1,104 +1,58 @@
 import re
 from csv_engine import cutoff_df
 
+TOTAL_CANDIDATES = 1100000
 
-# -------------------- MARKS HANDLING --------------------
+
+# -------------------- BASIC EXTRACTORS --------------------
 
 def extract_marks(q):
     q = q.lower()
-
-    # detect marks keywords
     if any(x in q for x in ["marks", "score", "out of"]):
         nums = re.findall(r"\d{2,3}", q)
         if nums:
             return int(nums[0])
-
     return None
 
 
-def mains_marks_to_rank(marks):
-    # rough mapping
-    if marks >= 280:
-        return 100
-    elif marks >= 250:
-        return 1000
-    elif marks >= 220:
-        return 3000
-    elif marks >= 200:
-        return 7000
-    elif marks >= 180:
-        return 15000
-    elif marks >= 150:
-        return 30000
-    elif marks >= 120:
-        return 60000
-    elif marks >= 100:
-        return 90000
-    else:
-        return 150000
-
-
-# -------------------- EXAM TYPE --------------------
-
-def extract_exam_type(q):
+def extract_percentile(q):
     q = q.lower()
-    if "advanced" in q:
-        return "advanced"
-    if "mains" in q:
-        return "mains"
-    return "unknown"
+    match = re.search(r"(\d{1,3}(\.\d+)?)\s*(%|percentile)", q)
+    if match:
+        val = float(match.group(1))
+        if 0 < val <= 100:
+            return val
+    return None
 
-
-# -------------------- RANK / PERCENTILE --------------------
 
 def extract_rank(q):
     q = q.lower()
 
-    # detect lakh
+    # lakh handling
     lakh_match = re.search(r"(\d+)\s*lakh", q)
     if lakh_match:
         return int(lakh_match.group(1)) * 100000
 
-    # detect AIR
+    # AIR handling
     air_match = re.search(r"(air|all india rank)\s*(\d{1,7})", q)
     if air_match:
         return int(air_match.group(2))
 
-    # normal numbers
+    # generic numbers
     nums = re.findall(r"\d{1,7}", q)
     for n in nums:
         n = int(n)
-
-        # ignore years
         if 2020 <= n <= 2030:
             continue
-
         if n > 0:
             return n
 
     return None
 
 
-
-def extract_percentile(q):
-    q = q.lower()
-
-    match = re.search(r"(\d{1,3}(\.\d+)?)\s*(%|percentile)", q)
-    if match:
-        val = float(match.group(1))
-        if 0 < val <= 100:
-            return val
-
-    return None
-
-
-
-TOTAL_CANDIDATES = 1100000
-
 def percentile_to_rank(percentile):
     rank = int((100 - percentile) * TOTAL_CANDIDATES / 100)
     return max(rank, 1)
-
 
 
 # -------------------- QUERY FEATURES --------------------
@@ -139,19 +93,16 @@ def extract_gender(q):
 
 
 def extract_institute_type(q):
-    q = q.lower()
+    q = " " + q.lower() + " "
 
-    if " iiit" in q or "iiit " in q:
+    if " iiit " in q:
         return "iiit"
-
-    if " nit" in q or "nit " in q:
+    if " nit " in q:
         return "nit"
-
-    if " iit" in q or "iit " in q:
+    if " iit " in q:
         return "iit"
 
     return None
-
 
 
 # -------------------- INSTITUTE PRIORITY --------------------
@@ -159,153 +110,131 @@ def extract_institute_type(q):
 def institute_priority(name):
     name = name.lower()
 
-    # Top IITs
-    if "bombay" in name or "delhi" in name or "madras" in name or "kanpur" in name or "kharagpur" in name:
+    if "bombay" in name or "delhi" in name or "madras" in name:
         return 1
 
-    # Other IITs
     if "indian institute of technology" in name:
         return 2
 
-    # Top NITs
     if "trichy" in name or "warangal" in name or "surathkal" in name:
         return 3
 
-    # Other NITs
     if "national institute of technology" in name:
         return 4
 
-    # IIITs
     if "information technology" in name:
         return 5
 
     return 6
 
 
-
 # -------------------- MAIN COUNSELLING FUNCTION --------------------
 
 def rank_counselling(query, rank_override=None):
 
-    # 1. detect marks
     marks = extract_marks(query)
     percentile = extract_percentile(query)
-    exam = extract_exam_type(query)
+
+    # ---------------- DETERMINE RANK ----------------
 
     if marks:
-        rank = mains_marks_to_rank(marks)
+        # rough mapping
+        if marks >= 280:
+            rank = 100
+        elif marks >= 250:
+            rank = 1000
+        elif marks >= 220:
+            rank = 3000
+        elif marks >= 200:
+            rank = 7000
+        elif marks >= 180:
+            rank = 15000
+        elif marks >= 150:
+            rank = 30000
+        elif marks >= 120:
+            rank = 60000
+        elif marks >= 100:
+            rank = 90000
+        else:
+            rank = 150000
         exam = "mains"
 
     elif percentile:
         rank = percentile_to_rank(percentile)
-        exam = "mains"   # force mains for percentile
-
+        exam = "mains"
 
     else:
         rank = rank_override if rank_override else extract_rank(query)
-
+        exam = "advanced" if rank and rank < 20000 else "mains"
 
     if not rank:
-        return None, "Please tell me your rank or marks."
+        return None, "Please tell me your rank, marks, or percentile."
+
+    # ---------------- EXTRACT OTHER FEATURES ----------------
 
     branch = extract_branch(query)
     category = extract_category(query)
     gender = extract_gender(query)
     inst_type = extract_institute_type(query)
-    
 
     df = cutoff_df.copy()
 
-    # ---------------- CLEAN RANK COLUMNS ----------------
-
-    df["CloseRank"] = df["CloseRank"].astype(str)
-    df["CloseRank"] = df["CloseRank"].str.replace(r"\D", "", regex=True)
+    # clean rank columns
+    df["CloseRank"] = df["CloseRank"].astype(str).str.replace(r"\D", "", regex=True)
     df = df[df["CloseRank"].str.isnumeric()]
     df["CloseRank"] = df["CloseRank"].astype(int)
 
-    df["OpenRank"] = df["OpenRank"].astype(str)
-    df["OpenRank"] = df["OpenRank"].str.replace(r"\D", "", regex=True)
-    df = df[df["OpenRank"].str.isnumeric()]
-    df["OpenRank"] = df["OpenRank"].astype(int)
-
     # ---------------- FILTERS ----------------
 
-    if branch:
-        df = df[df["Branch"].str.lower().str.contains(branch, na=False)]
+    # strict category
+    df = df[df["Category"] == category]
 
-    if category:
-        df = df[df["Category"].str.contains(category, na=False)]
-
-    
-    # always remove PwD unless explicitly requested
+    # remove PwD always unless asked
     if "pwd" not in query.lower():
         df = df[~df["Category"].str.contains("PwD", case=False, na=False)]
 
-
-
+    # gender
     if gender == "Female":
         df = df[df["Gender"].str.contains("Female", na=False)]
     else:
         df = df[df["Gender"].str.contains("Gender-Neutral", na=False)]
 
-    # ---------------- EXAM BASED FILTER ----------------
+    # branch
+    if branch:
+        df = df[df["Branch"].str.lower().str.contains(branch, na=False)]
 
-    # STRICT exam filtering
-    # ---------------- EXAM BASED FILTER ----------------
+    # ---------------- EXAM FILTER ----------------
 
     if exam == "mains":
-    # Remove all IITs completely
-       df = df[~df["Institute"].str.contains(
-        "Indian Institute of Technology",
-        case=False,
-        na=False
-    )]
+        df = df[
+            df["Institute"].str.contains(
+                "National Institute of Technology|Information Technology",
+                case=False,
+                na=False
+            )
+        ]
 
     elif exam == "advanced":
-    # Keep only IITs
-       df = df[df["Institute"].str.contains(
-        "Indian Institute of Technology",
-        case=False,
-        na=False
-    )]
+        df = df[
+            df["Institute"].str.contains(
+                "Indian Institute of Technology",
+                case=False,
+                na=False
+            )
+        ]
 
-
-
-   # ---------------- INSTITUTE TYPE FILTER ----------------
-
-# Only allow institute filter if it matches the exam
-    if inst_type == "iit" and exam == "advanced":
-      df = df[df["Institute"].str.contains("Indian Institute of Technology", na=False)]
-
-    elif inst_type == "nit" and exam == "mains":
-      df = df[df["Institute"].str.contains("National Institute of Technology", na=False)]
-
-    elif inst_type == "iiit" and exam == "mains":
-      df = df[df["Institute"].str.contains("Information Technology", na=False)]
-
-
-    # ---------------- FINAL COUNSELLING CONDITION ----------------
+    # ---------------- FINAL RANK FILTER ----------------
 
     df = df[df["CloseRank"] >= rank]
 
-
     if df.empty:
-        if inst_type:
-            return None, f"No {inst_type.upper()} available for this rank."
         return None, "No colleges found for your profile."
 
     # remove duplicates
     df = df.drop_duplicates(subset=["Institute", "Branch", "Category", "Gender"])
 
-    # apply institute priority
+    # priority sort
     df["priority"] = df["Institute"].apply(institute_priority)
-
-    # sort: best institute first
-    df = df.sort_values(
-    by=["priority", "CloseRank"],
-    ascending=[True, True]
-)
-
-
+    df = df.sort_values(by=["priority", "CloseRank"])
 
     return df.head(10), None
