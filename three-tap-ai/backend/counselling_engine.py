@@ -140,13 +140,18 @@ def extract_gender(q):
 
 def extract_institute_type(q):
     q = q.lower()
-    if "iiit" in q:
+
+    if " iiit" in q or "iiit " in q:
         return "iiit"
-    if "nit" in q:
+
+    if " nit" in q or "nit " in q:
         return "nit"
-    if "iit" in q:
+
+    if " iit" in q or "iit " in q:
         return "iit"
+
     return None
+
 
 
 # -------------------- INSTITUTE PRIORITY --------------------
@@ -266,14 +271,18 @@ def rank_counselling(query, rank_override=None):
 
 
 
-    # ---------------- INSTITUTE TYPE FILTER ----------------
+   # ---------------- INSTITUTE TYPE FILTER ----------------
 
-    if inst_type == "iit":
-        df = df[df["Institute"].str.contains("Indian Institute of Technology", na=False)]
-    elif inst_type == "nit":
-        df = df[df["Institute"].str.contains("National Institute of Technology", na=False)]
-    elif inst_type == "iiit":
-        df = df[df["Institute"].str.contains("Information Technology", na=False)]
+# Only allow institute filter if it matches the exam
+    if inst_type == "iit" and exam == "advanced":
+      df = df[df["Institute"].str.contains("Indian Institute of Technology", na=False)]
+
+    elif inst_type == "nit" and exam == "mains":
+      df = df[df["Institute"].str.contains("National Institute of Technology", na=False)]
+
+    elif inst_type == "iiit" and exam == "mains":
+      df = df[df["Institute"].str.contains("Information Technology", na=False)]
+
 
     # ---------------- FINAL COUNSELLING CONDITION ----------------
 
