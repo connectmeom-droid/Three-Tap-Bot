@@ -26,28 +26,32 @@ def detect_intent(query):
     q = query.lower()
 
     # cutoff intent
-    if "cutoff" in q or "closing rank" in q or "opening rank" in q:
+    if any(x in q for x in [
+        "cutoff",
+        "closing rank",
+        "opening rank"
+    ]):
         return "cutoff"
 
-    # percentile intent
-    if "percentile" in q:
-        return "rank"
-
-    # rank present → counselling
-    rank = extract_rank(q)
-    if rank is not None:
-        return "rank"
-
-    # common counselling phrases
+    # rank / percentile intent
     if any(x in q for x in [
+        "percentile",
+        "rank",
+        "air",
+        "all india rank",
+        "what can i get",
         "which college",
-        "which iit",
         "which nit",
         "which iiit",
+        "which iit",
+        "options",
         "can i get",
-        "best college",
-        "college can i get"
+        "expected rank",
+        "expected air",
+        "strategy",
+        "counselling"
     ]):
         return "rank"
 
     return "general"
+

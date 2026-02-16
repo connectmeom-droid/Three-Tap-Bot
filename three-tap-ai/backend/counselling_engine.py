@@ -54,10 +54,15 @@ def extract_exam_type(q):
 def extract_rank(q):
     q = q.lower()
 
-    # handle lakh
+    # detect lakh
     lakh_match = re.search(r"(\d+)\s*lakh", q)
     if lakh_match:
         return int(lakh_match.group(1)) * 100000
+
+    # detect AIR
+    air_match = re.search(r"(air|all india rank)\s*(\d{1,7})", q)
+    if air_match:
+        return int(air_match.group(2))
 
     # normal numbers
     nums = re.findall(r"\d{1,7}", q)
@@ -70,18 +75,30 @@ def extract_rank(q):
 
         if n > 0:
             return n
+
     return None
+
 
 
 def extract_percentile(q):
-    match = re.search(r"(\d{1,2}(\.\d+)?)\s*(%|percentile)", q.lower())
+    q = q.lower()
+
+    match = re.search(r"(\d{1,3}(\.\d+)?)\s*(%|percentile)", q)
     if match:
-        return float(match.group(1))
+        val = float(match.group(1))
+        if 0 < val <= 100:
+            return val
+
     return None
 
 
+
+TOTAL_CANDIDATES = 1100000
+
 def percentile_to_rank(percentile):
-    return int((100 - percentile) * 10000)
+    rank = int((100 - percentile) * TOTAL_CANDIDATES / 100)
+    return max(rank, 1)
+
 
 
 # -------------------- QUERY FEATURES --------------------

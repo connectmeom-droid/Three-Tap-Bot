@@ -3,8 +3,10 @@ from csv_engine import search_cutoff
 from counselling_engine import (
     rank_counselling,
     extract_percentile,
-    percentile_to_rank
+    percentile_to_rank,
+    extract_rank
 )
+
 
 def format_rank_response(df, rank):
     if df is None or df.empty:
@@ -68,41 +70,23 @@ def hybrid_answer(question):
 
         # ---------------- RANK / PERCENTILE ----------------
         if intent == "rank":
-            import re
 
-    # check for percentile
-            p_match = re.search(r"(\d{2,3})\s*percentile", question.lower())
+           df, msg = rank_counselling(question)
 
-            if p_match:
-                percentile = int(p_match.group(1))
+           if msg:
+                return msg
 
-        # rough percentile → rank mapping
-                if percentile >= 99:
-                    rank = 1000
-                elif percentile >= 97:
-                    rank = 5000
-                elif percentile >= 95:
-                    rank = 10000
-                elif percentile >= 90:
-                    rank = 30000
-                elif percentile >= 80:
-                    rank = 80000
+    # get rank for formatting
+           rank = extract_rank(question)
+           if not rank:
+                percentile = extract_percentile(question)
+                if percentile:
+                    rank = percentile_to_rank(percentile)
                 else:
-                    rank = 150000
+                    rank = 0
 
-                df, msg = rank_counselling(question, rank_override=rank)
+           return format_rank_response(df, rank)
 
-            else:
-                df, msg = rank_counselling(question)
-
-        # extract rank for formatting
-                nums = re.findall(r"\d{1,7}", question)
-                rank = int(nums[0]) if nums else 0
-
-            if msg:
-               return msg
-
-            return format_rank_response(df, rank)
 
 
         return "Ask about ranks, percentiles, cutoffs, or colleges."
