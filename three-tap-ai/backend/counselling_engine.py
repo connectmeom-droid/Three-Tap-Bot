@@ -189,11 +189,12 @@ def rank_counselling(query, rank_override=None):
 
     if marks:
         rank = mains_marks_to_rank(marks)
-        exam = "mains"   # force mains when marks are given
+        exam = "mains"
 
     elif percentile:
         rank = percentile_to_rank(percentile)
-        exam = "mains"   # percentile always from mains
+        exam = "mains"   # force mains for percentile
+
 
     else:
         rank = rank_override if rank_override else extract_rank(query)
@@ -230,9 +231,11 @@ def rank_counselling(query, rank_override=None):
     if category:
         df = df[df["Category"].str.contains(category, na=False)]
 
-    # remove PwD unless asked
+    
+    # always remove PwD unless explicitly requested
     if "pwd" not in query.lower():
-        df = df[~df["Category"].str.lower().str.contains("pwd", na=False)]
+        df = df[~df["Category"].str.contains("PwD", case=False, na=False)]
+
 
 
     if gender == "Female":
@@ -274,7 +277,8 @@ def rank_counselling(query, rank_override=None):
 
     # ---------------- FINAL COUNSELLING CONDITION ----------------
 
-    df = df[(df["OpenRank"] <= rank) & (df["CloseRank"] >= rank)]
+    df = df[df["CloseRank"] >= rank]
+
 
     if df.empty:
         if inst_type:
