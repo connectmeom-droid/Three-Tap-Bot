@@ -77,15 +77,16 @@ def hybrid_answer(question):
                 return msg
 
     # get rank for formatting
-           rank = extract_rank(question)
-           if not rank:
-                percentile = extract_percentile(question)
-                if percentile:
-                    rank = percentile_to_rank(percentile)
-                else:
-                    rank = 0
+           # get rank for formatting
+        percentile = extract_percentile(question)
 
-           return format_rank_response(df, rank)
+        if percentile:
+            rank = percentile_to_rank(percentile)
+        else:
+            rank = extract_rank(question) or 0
+
+
+        return format_rank_response(df, rank)
 
 
 
