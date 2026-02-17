@@ -19,12 +19,15 @@ def format_rank_response(df, rank):
     for _, row in df.iterrows():
         closing = int(row["CloseRank"])
 
-        if closing >= rank * 1.5:
+        ratio = closing / rank
+
+        if ratio >= 1.3:
             safe.append(row)
-        elif closing >= rank:
+        elif ratio >= 1.0:
             moderate.append(row)
-        else:
+        elif ratio >= 0.8:
             dream.append(row)
+
 
     def build_section(title, data):
         text = f"{title}:\n"

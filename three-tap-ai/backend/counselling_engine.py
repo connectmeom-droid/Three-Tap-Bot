@@ -1,8 +1,6 @@
 import re
 from csv_engine import cutoff_df
 
-TOTAL_CANDIDATES = 1100000
-
 
 # -------------------- BASIC EXTRACTORS --------------------
 
@@ -50,8 +48,27 @@ def extract_rank(q):
     return None
 
 
-def percentile_to_rank(percentile):
-    rank = int((100 - percentile) * TOTAL_CANDIDATES / 100)
+YEARLY_CANDIDATES = {
+    2022: 905000,
+    2023: 940000,
+    2024: 1170000,
+    2025: 1200000,  # update when official data comes
+}
+
+DEFAULT_YEAR = 2025
+
+
+def extract_year(query):
+    import re
+    match = re.search(r"(20\d{2})", query)
+    if match:
+        return int(match.group(1))
+    return DEFAULT_YEAR
+
+
+def percentile_to_rank(percentile, year=DEFAULT_YEAR):
+    total = YEARLY_CANDIDATES.get(year, YEARLY_CANDIDATES[DEFAULT_YEAR])
+    rank = int((100 - percentile) * total / 100)
     return max(rank, 1)
 
 
@@ -160,12 +177,20 @@ def rank_counselling(query, rank_override=None):
         exam = "mains"
 
     elif percentile:
-        rank = percentile_to_rank(percentile)
+        year = extract_year(query)
+        rank = percentile_to_rank(percentile, year)
         exam = "mains"
 
     else:
-        rank = rank_override if rank_override else extract_rank(query)
-        exam = "advanced" if rank and rank < 20000 else "mains"
+      rank = rank_override if rank_override else extract_rank(query)
+
+    # default exam
+      exam = "mains"
+
+    # only treat as advanced if explicitly mentioned
+      if "advanced" in query.lower():
+        exam = "advanced"
+
 
     if not rank:
         return None, "Please tell me your rank, marks, or percentile."
@@ -225,7 +250,9 @@ def rank_counselling(query, rank_override=None):
 
     # ---------------- FINAL RANK FILTER ----------------
 
-    df = df[df["CloseRank"] >= rank]
+    # allow only colleges within realistic range
+    df = df[df["CloseRank"] >= rank * 0.8]
+
 
     if df.empty:
         return None, "No colleges found for your profile."
