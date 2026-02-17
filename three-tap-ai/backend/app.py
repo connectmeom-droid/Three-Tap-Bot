@@ -20,3 +20,8 @@ class Query(BaseModel):
 def chat(query: Query):
     answer = hybrid_answer(query.question)
     return {"answer": answer}
+
+
+@app.get("/")
+def home():
+    return {"status": "Backend V3 is running"}
