@@ -71,7 +71,7 @@ def hybrid_answer(question):
 
             return reply.strip()
 
-        # ---------------- RANK / PERCENTILE ----------------
+        # ---------------- RANK / PERCENTILE----------------
         if intent == "rank":
 
            df, msg = rank_counselling(question)
