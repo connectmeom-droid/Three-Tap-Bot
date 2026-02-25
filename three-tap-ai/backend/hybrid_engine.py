@@ -19,6 +19,9 @@ def format_rank_response(df, rank):
     for _, row in df.iterrows():
         closing = int(row["CloseRank"])
 
+        if rank <= 0:
+           continue
+
         ratio = closing / rank
 
         if ratio >= 1.3:
@@ -50,7 +53,6 @@ def format_rank_response(df, rank):
 def hybrid_answer(question):
     try:
         intent = detect_intent(question)
-        q = question.lower()
 
         # ---------------- CUTOFF ----------------
         if intent == "cutoff":
@@ -71,28 +73,24 @@ def hybrid_answer(question):
 
             return reply.strip()
 
-        # ---------------- RANK / PERCENTILE----------------
+        # ---------------- RANK / PERCENTILE ----------------
         if intent == "rank":
 
-           df, msg = rank_counselling(question)
+            df, msg = rank_counselling(question)
 
-           if msg:
+            if msg:
                 return msg
 
-    # get rank for formatting
-           # get rank for formatting
-        percentile = extract_percentile(question)
+            percentile = extract_percentile(question)
 
-        if percentile:
-            rank = percentile_to_rank(percentile)
-        else:
-            rank = extract_rank(question) or 0
+            if percentile:
+                rank = percentile_to_rank(percentile)
+            else:
+                rank = extract_rank(question) or 0
 
+            return format_rank_response(df, rank)
 
-        return format_rank_response(df, rank)
-
-
-
+        # ---------------- GENERAL ----------------
         return "Ask about ranks, percentiles, cutoffs, or colleges."
 
     except Exception as e:
